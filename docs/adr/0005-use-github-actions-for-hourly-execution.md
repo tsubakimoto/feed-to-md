@@ -1,5 +1,5 @@
 ---
-status: accepted
+status: superseded
 date: 2026-11-01
 deciders: yuta
 ---
@@ -43,6 +43,8 @@ Workflow構文とPowerShellをローカル検証する。default branchへ配置
 - 悪い点: scheduleの遅延・欠落と自動無効化に対応する必要がある。
 
 ## More Information
+
+Superseded by [ADR-0009](0009-use-ubuntu-for-hourly-github-actions-execution.md)。毎時実行のDecisionは引き継がれ、runnerはUbuntuへ変更された。
 
 接続設定の入力元は[ADR-0008](0008-restore-environment-based-foundry-configuration.md)で環境変数に変更された。本ADRの毎時実行のDecisionは維持する。
 

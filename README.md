@@ -85,10 +85,10 @@ NuGet依存はsourceの`#:package`にversionを固定して宣言する。初回
 
 ## GitHub Actionsで毎時実行
 
-[hourly-feed-to-md.yml](.github/workflows/hourly-feed-to-md.yml)はWindows hosted runnerとpwshで、次のコマンドを毎時17分に実行する。cronはUTCだが、JSTでも毎時17分となる。
+[hourly-feed-to-md.yml](.github/workflows/hourly-feed-to-md.yml)はUbuntu hosted runner（`ubuntu-latest`）とBash（`bash`）で、次のコマンドを毎時0分に実行する。cronはUTCだが、JSTでも毎時0分となる。
 
-```powershell
-dotnet run --file .\app.cs -- --count 10 --output-dir .\output
+```bash
+dotnet run --file app.cs -- --count 10 --output-dir output
 ```
 
 .NET SDK 10.0.xの最新GAを導入し、10.0.300以上であることを確認する。runner内に一時global.jsonを作り、他のプリインストールSDKではなく選択したSDKを使用する。実行時間上限は45分。同時実行を抑止し、実行中のjobを取り消さない。
@@ -173,9 +173,11 @@ dotnet run --file .\tests\FeedToMarkdownTests.cs -- --list-tests
 - [ADR-0002: Foundryによる分類・要約](docs/adr/0002-use-foundry-for-article-analysis.md)
 - [ADR-0003: Entra ID認証（superseded）](docs/adr/0003-use-entra-id-for-foundry-authentication.md)
 - [ADR-0004: appsettingsによる接続設定（superseded）](docs/adr/0004-use-appsettings-for-foundry-configuration.md)
-- [ADR-0005: GitHub Actionsで毎時実行](docs/adr/0005-use-github-actions-for-hourly-execution.md)
+- [ADR-0005: GitHub Actionsで毎時実行（superseded）](docs/adr/0005-use-github-actions-for-hourly-execution.md)
 - [ADR-0006: Job summaryでMarkdownを公開](docs/adr/0006-publish-markdown-in-workflow-job-summaries.md)
 - [ADR-0007: GitHub OIDCによるFoundry認証](docs/adr/0007-use-github-oidc-for-foundry-authentication.md)
 - [ADR-0008: 環境変数による接続設定へ戻す](docs/adr/0008-restore-environment-based-foundry-configuration.md)
+- [ADR-0009: Ubuntu runnerで毎時実行（superseded）](docs/adr/0009-use-ubuntu-for-hourly-github-actions-execution.md)
+- [ADR-0010: Workflow内のshellをBashへ変更](docs/adr/0010-use-bash-in-hourly-github-actions-workflow.md)
 
 [Microsoft Foundry SDKs and endpoints](https://learn.microsoft.com/en-us/azure/foundry/how-to/develop/sdk-overview)

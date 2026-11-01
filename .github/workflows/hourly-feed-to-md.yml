@@ -16,11 +16,11 @@ concurrency:
 jobs:
   convert:
     if: ${{ github.ref == format('refs/heads/{0}', github.event.repository.default_branch) }}
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
     timeout-minutes: 45
     defaults:
       run:
-        shell: pwsh
+        shell: bash
     env:
       AZURE_AI_PROJECT_ENDPOINT: ${{ vars.AZURE_AI_PROJECT_ENDPOINT }}
       AZURE_AI_MODEL_DEPLOYMENT_NAME: ${{ vars.AZURE_AI_MODEL_DEPLOYMENT_NAME }}
@@ -44,15 +44,14 @@ jobs:
         env:
           DOTNET_SDK_VERSION: ${{ steps.dotnet.outputs.dotnet-version }}
         run: |
-          if ($env:DOTNET_SDK_VERSION -notmatch '^10\.0\.\d+$' -or
-              [version]$env:DOTNET_SDK_VERSION -lt [version]'10.0.300') {
-            throw 'The app requires a stable .NET SDK 10.0.300 or later in the 10.0 series.'
-          }
-          dotnet new globaljson --sdk-version $env:DOTNET_SDK_VERSION --roll-forward disable
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          if (Test-Path -LiteralPath '.\output') {
-            Remove-Item -LiteralPath '.\output' -Recurse -Force
-          }
+          set -euo pipefail
+          if [[ ! "${DOTNET_SDK_VERSION:-}" =~ ^10\.0\.([0-9]+)$ ]] ||
+              (( 10#${BASH_REMATCH[1]} < 300 )); then
+            printf '%s\n' 'The app requires a stable .NET SDK 10.0.300 or later in the 10.0 series.' >&2
+            exit 1
+          fi
+          dotnet new globaljson --sdk-version "$DOTNET_SDK_VERSION" --roll-forward disable
+          rm -rf -- output
 
       - name: Log in to Azure with OIDC
         uses: Azure/login@a641126d1b8aa4d1fa005f4f92df94a3a4c4c906 # v3.1.0
@@ -63,41 +62,36 @@ jobs:
 
       - name: Convert feed to Markdown
         id: convert
-        run: dotnet run --file .\app.cs -- --count 10 --output-dir .\output
+        run: dotnet run --file app.cs -- --count 10 --output-dir output
 
       - name: Publish job summary
         if: ${{ always() }}
         env:
           CONVERSION_OUTCOME: ${{ steps.convert.outcome }}
         run: |
-          $utf8 = [System.Text.UTF8Encoding]::new($false)
-          if ($env:CONVERSION_OUTCOME -ne 'success') {
-            [System.IO.File]::WriteAllText(
-              $env:GITHUB_STEP_SUMMARY,
-              "# RSS変換は完了していません`n`n実行ログを確認してください。`n",
-              $utf8)
-            return
+          set -euo pipefail
+          if [[ "${CONVERSION_OUTCOME:-}" != 'success' ]]; then
+            printf '%s\n\n%s\n' '# RSS変換は完了していません' '実行ログを確認してください。' > "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          fail_summary() {
+            printf '%s\n\n%s\n' '# Job summaryの生成に失敗しました' '実行ログを確認してください。' > "$GITHUB_STEP_SUMMARY"
+            printf '%s\n' "${1:-Job summary generation failed.}" >&2
+            exit 1
           }
-          try {
-            $files = @(Get-ChildItem -LiteralPath '.\output' -Recurse -File -Filter '*.md' -ErrorAction Stop)
-            if ($files.Count -ne 1) {
-              throw 'Expected exactly one generated Markdown file.'
-            }
-            if ($files[0].Length -gt 1MB) {
-              throw 'Generated Markdown exceeds the 1 MiB job summary limit.'
-            }
-            $markdown = [System.IO.File]::ReadAllText($files[0].FullName, $utf8)
-            if ([string]::IsNullOrWhiteSpace($markdown)) {
-              throw 'Generated Markdown is empty.'
-            }
-            if ($utf8.GetByteCount($markdown) -gt 1MB) {
-              throw 'Generated Markdown exceeds the 1 MiB job summary limit.'
-            }
-            [System.IO.File]::WriteAllText($env:GITHUB_STEP_SUMMARY, $markdown, $utf8)
-          } catch {
-            [System.IO.File]::WriteAllText(
-              $env:GITHUB_STEP_SUMMARY,
-              "# Job summaryの生成に失敗しました`n`n実行ログを確認してください。`n",
-              $utf8)
-            throw
-          }
+          trap 'fail_summary' ERR
+          file_list=$(mktemp)
+          trap 'rm -f -- "$file_list"' EXIT
+          find output -type f -name '*.md' -print0 > "$file_list"
+          mapfile -d '' -t files < "$file_list"
+          if (( ${#files[@]} != 1 )); then
+            fail_summary 'Expected exactly one generated Markdown file.'
+          fi
+          bytes=$(wc -c < "${files[0]}")
+          if (( bytes > 1048576 )); then
+            fail_summary 'Generated Markdown exceeds the 1 MiB job summary limit.'
+          fi
+          if ! LC_ALL=C.UTF-8 grep -qP '[^\s\p{Z}\x{0085}]' "${files[0]}"; then
+            fail_summary 'Generated Markdown is empty.'
+          fi
+          cat -- "${files[0]}" > "$GITHUB_STEP_SUMMARY"
