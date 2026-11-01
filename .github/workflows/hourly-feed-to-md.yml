@@ -4,6 +4,12 @@ on:
   schedule:
     - cron: '0 * * * *'
   workflow_dispatch:
+    inputs:
+      count:
+        description: '取得する記事件数（正の整数）'
+        type: number
+        required: false
+        default: 10
 
 permissions:
   contents: read
@@ -62,7 +68,9 @@ jobs:
 
       - name: Convert feed to Markdown
         id: convert
-        run: dotnet run --file app.cs -- --count 10 --output-dir output
+        env:
+          ARTICLE_COUNT: ${{ inputs.count }}
+        run: dotnet run --file app.cs -- --count "${ARTICLE_COUNT:-10}" --output-dir output
 
       - name: Publish job summary
         if: ${{ always() }}

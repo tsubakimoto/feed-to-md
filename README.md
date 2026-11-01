@@ -125,7 +125,7 @@ dotnet run --file app.cs -- --count 10 --output-dir output
 
 ### 実行結果・確認
 
-Workflowをdefault branchへ配置するとscheduleが有効になる。初回確認は **Actions → Hourly feed to Markdown → Run workflow** でdefault branchを選んで手動実行する。別branchでの手動実行はjobをskipする。
+Workflowをdefault branchへ配置するとscheduleが有効になる。初回確認は **Actions → Hourly feed to Markdown → Run workflow** でdefault branchを選んで手動実行する。`count`には取得件数を正の整数で指定でき、既定値は10。定期実行は10件のまま。不正な件数はアプリの既存検証で非0終了する。別branchでの手動実行はjobをskipする。
 
 生成したMarkdownはWorkflow runの **Summary** ページに掲載する。runner内のoutputは実行前に初期化し、今回の生成ファイル1件だけを掲載する。全体失敗時は失敗表示とし、jobの失敗を隠さない。個別記事の要約失敗は既存アプリと同じくMarkdownに残る。
 
