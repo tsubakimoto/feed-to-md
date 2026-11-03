@@ -48,4 +48,6 @@ YAMLとBash構文を検証し、SDKの境界値・失敗終了コード、Summar
 
 ## More Information
 
+Job summaryの保存先は[ADR-0011](0011-save-markdown-as-workflow-artifacts.md)でArtifactsへ変更する。Bash実行のDecisionは維持する。
+
 Supersedes [ADR-0009](0009-use-ubuntu-for-hourly-github-actions-execution.md)。Ubuntu runnerと毎時実行のDecisionを引き継ぎ、shellをBashへ変更する。[ADR-0006](0006-publish-markdown-in-workflow-job-summaries.md)、[ADR-0007](0007-use-github-oidc-for-foundry-authentication.md)、[ADR-0008](0008-restore-environment-based-foundry-configuration.md)のDecisionは維持する。

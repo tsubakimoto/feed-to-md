@@ -1,5 +1,5 @@
 ---
-status: accepted
+status: superseded
 date: 2026-11-01
 deciders: yuta
 ---
@@ -54,6 +54,8 @@ synthetic Markdownを使ってUTF-8の内容一致、ファイル欠損・サイ
 - 悪い点: ファイルの長期保存手段ではない。step当たりのサイズ上限がある。
 
 ## More Information
+
+Superseded by [ADR-0011](0011-save-markdown-as-workflow-artifacts.md)。
 
 毎時実行は[ADR-0005](0005-use-github-actions-for-hourly-execution.md)で記録する。
 

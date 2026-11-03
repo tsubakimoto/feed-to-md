@@ -127,14 +127,14 @@ dotnet run --file app.cs -- --count 10 --output-dir output
 
 Workflowをdefault branchへ配置するとscheduleが有効になる。初回確認は **Actions → Hourly feed to Markdown → Run workflow** でdefault branchを選んで手動実行する。`count`には取得件数を正の整数で指定でき、既定値は10。定期実行は10件のまま。不正な件数はアプリの既存検証で非0終了する。別branchでの手動実行はjobをskipする。
 
-生成したMarkdownはWorkflow runの **Summary** ページに掲載する。runner内のoutputは実行前に初期化し、今回の生成ファイル1件だけを掲載する。全体失敗時は失敗表示とし、jobの失敗を隠さない。個別記事の要約失敗は既存アプリと同じくMarkdownに残る。
+生成したMarkdownはWorkflow runの **Artifacts → feed-to-md** からダウンロードする。`yyyy/MM/yyyyMMddHHmm.md`のディレクトリ構造を保持したZIPとして保存する。runner内のoutputは実行前に初期化し、変換成功時のみ今回の生成ファイル1件だけをアップロードする。出力欠損・複数ファイル・空または空白のみのファイルは検証stepを失敗させ、アップロードしない。全体失敗時もjobの失敗を隠さない。個別記事の要約失敗は既存アプリと同じくMarkdownに残る。
 
-ArtifactアップロードやRepositoryへのcommitは行わない。Markdownファイル自体はrunner終了時に破棄され、SummaryもWorkflow runを削除すると失われる。Summaryの1 MiB上限を超える出力や、出力欠損・空ファイルは掲載stepを失敗させる。
+Job summaryへのMarkdown掲載やRepositoryへのcommitは行わない。Artifactの保存期限はRepositoryの既定設定に従い、期限切れ・Workflow runの削除で失われる。Job summary固有の1 MiB制限は適用しない。
 
-GitHub scheduleは遅延・欠落する場合があり、厳密な実行時刻・実行間隔を保証しない。public Repositoryでは60日間活動がないとscheduleが自動無効化される。ローカルの構文・Summary検証では、実OIDC・Foundry接続・定期実行の成功までは確認できない。
+GitHub scheduleは遅延・欠落する場合があり、厳密な実行時刻・実行間隔を保証しない。public Repositoryでは60日間活動がないとscheduleが自動無効化される。ローカルの構文・出力検証では、実Artifactアップロード・OIDC・Foundry接続・定期実行の成功までは確認できない。
 
 - [GitHub Actions schedule](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#schedule)
-- [GitHub Actions job summaries](https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-commands#adding-a-job-summary)
+- [GitHub Actions upload-artifact](https://github.com/actions/upload-artifact)
 - [Azure Login OIDC](https://github.com/Azure/login#login-with-openid-connect-oidc-recommended)
 
 ## 検証
@@ -174,10 +174,11 @@ dotnet run --file .\tests\FeedToMarkdownTests.cs -- --list-tests
 - [ADR-0003: Entra ID認証（superseded）](docs/adr/0003-use-entra-id-for-foundry-authentication.md)
 - [ADR-0004: appsettingsによる接続設定（superseded）](docs/adr/0004-use-appsettings-for-foundry-configuration.md)
 - [ADR-0005: GitHub Actionsで毎時実行（superseded）](docs/adr/0005-use-github-actions-for-hourly-execution.md)
-- [ADR-0006: Job summaryでMarkdownを公開](docs/adr/0006-publish-markdown-in-workflow-job-summaries.md)
+- [ADR-0006: Job summaryでMarkdownを公開（superseded）](docs/adr/0006-publish-markdown-in-workflow-job-summaries.md)
 - [ADR-0007: GitHub OIDCによるFoundry認証](docs/adr/0007-use-github-oidc-for-foundry-authentication.md)
 - [ADR-0008: 環境変数による接続設定へ戻す](docs/adr/0008-restore-environment-based-foundry-configuration.md)
 - [ADR-0009: Ubuntu runnerで毎時実行（superseded）](docs/adr/0009-use-ubuntu-for-hourly-github-actions-execution.md)
 - [ADR-0010: Workflow内のshellをBashへ変更](docs/adr/0010-use-bash-in-hourly-github-actions-workflow.md)
+- [ADR-0011: MarkdownをArtifactsへ保存](docs/adr/0011-save-markdown-as-workflow-artifacts.md)
 
 [Microsoft Foundry SDKs and endpoints](https://learn.microsoft.com/en-us/azure/foundry/how-to/develop/sdk-overview)

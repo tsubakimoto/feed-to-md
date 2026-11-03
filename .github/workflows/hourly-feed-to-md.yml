@@ -72,34 +72,27 @@ jobs:
           ARTICLE_COUNT: ${{ inputs.count }}
         run: dotnet run --file app.cs -- --count "${ARTICLE_COUNT:-10}" --output-dir output
 
-      - name: Publish job summary
-        if: ${{ always() }}
-        env:
-          CONVERSION_OUTCOME: ${{ steps.convert.outcome }}
+      - name: Validate generated Markdown
+        if: ${{ success() && steps.convert.outcome == 'success' }}
         run: |
           set -euo pipefail
-          if [[ "${CONVERSION_OUTCOME:-}" != 'success' ]]; then
-            printf '%s\n\n%s\n' '# RSS変換は完了していません' '実行ログを確認してください。' > "$GITHUB_STEP_SUMMARY"
-            exit 0
-          fi
-          fail_summary() {
-            printf '%s\n\n%s\n' '# Job summaryの生成に失敗しました' '実行ログを確認してください。' > "$GITHUB_STEP_SUMMARY"
-            printf '%s\n' "${1:-Job summary generation failed.}" >&2
-            exit 1
-          }
-          trap 'fail_summary' ERR
           file_list=$(mktemp)
           trap 'rm -f -- "$file_list"' EXIT
           find output -type f -name '*.md' -print0 > "$file_list"
           mapfile -d '' -t files < "$file_list"
           if (( ${#files[@]} != 1 )); then
-            fail_summary 'Expected exactly one generated Markdown file.'
-          fi
-          bytes=$(wc -c < "${files[0]}")
-          if (( bytes > 1048576 )); then
-            fail_summary 'Generated Markdown exceeds the 1 MiB job summary limit.'
+            printf '%s\n' 'Expected exactly one generated Markdown file.' >&2
+            exit 1
           fi
           if ! LC_ALL=C.UTF-8 grep -qP '[^\s\p{Z}\x{0085}]' "${files[0]}"; then
-            fail_summary 'Generated Markdown is empty.'
+            printf '%s\n' 'Generated Markdown is empty.' >&2
+            exit 1
           fi
-          cat -- "${files[0]}" > "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload Markdown artifact
+        if: ${{ success() && steps.convert.outcome == 'success' }}
+        uses: actions/upload-artifact@v7.0.2
+        with:
+          name: feed-to-md
+          path: output/**/*.md
+          if-no-files-found: error
